@@ -1,0 +1,35 @@
+name: PHP CI/CD Workflow
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      # Add steps here to set up PHP, install dependencies, and run tests if applicable
+
+  deploy_to_prod:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Git to use the token
+        run: |
+          git config user.name "cresoluser"
+          git config user.email ":cresoluser@gmail.com"
+          git remote set-url origin https://x-access-token:${{ secrets.CICD }}@github.com/cresoluser/cresol.git
+      - name: Push to development Branch
+        run: |
+          git checkout -b prod
+          git push -f origin prod
+
+      - name: FTP Deploy Action To Prod
+        uses: SamKirkland/FTP-Deploy-Action@4.0.0
+        with:
+          if: "github.event_name == 'push' && github.ref == 'refs/heads/prod'"
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./  # If your whole repo should be uploaded
+          server-dir: /prod/  # Your FTP path
+
